@@ -2,6 +2,7 @@
 """
 Timing model parameters calsses.
 """
+import os
 
 class Parameter(object):
     
@@ -215,27 +216,42 @@ class BinaryParameter(Parameter):
             
 
 
-
-def validate_parameters(params):
+def validate_parameters(params, quiet=False):
     default_values = {'EPHEM': 'DE421', 'CLK': 'TT(BIPM2021)', 'UNITS': 'TDB', 
-                      'POSEPOCH': '55000'}
+                      'PEPOCH': '55000'}
 
     # Check miscellaneous
+    if not quiet:
+        print("Checking timing model ing miscells...")
     miscellaneous_params = [param for param in params if type(param) is MiscellaneousParameter]
     miscellaneous_params_names = [param.name for param in params if type(param) is MiscellaneousParameter]
     if 'PSR' not in miscellaneous_params_names:
+        if not quiet:
+            print("Warning:: Pulsar name must be given.")
         return [], params
     for param_name in ['EPHEM', 'CLK', 'UNITS']:
         if param_name not in miscellaneous_params_names:
             param = Parameter(param_name, value=default_values[param_name])
             miscellaneous_params += [param.auto_detect()]
-    
+
+    # Check spindown
+    if not quiet:
+        print("Checking timing model spindown parameters...")
+    spindown_params = [param for param in params if type(param) is SpindownParameter]
+    spindown_params_names = [param.name for param in params if type(param) is SpindownParameter]
+    if 'F0' not in spindown_params_names:
+        if not quiet:
+            print("Warning:: Spindown parameters are missing.")
+        return [], params
+    if 'PEPOCH' not in spindown_params_names:
+        param = Parameter('PEPOCH', value=default_values['PEPOCH'])
+        spindown_params += [param.auto_detect()]
+
     # Check astrometry
+    if not quiet:
+        print("Checking timing model astrometry parameters...")
     astrometry_params = [param for param in params if type(param) is AstrometryParameter]
     astrometry_params_names = [param.name for param in params if type(param) is AstrometryParameter]
-    if 'POSEPOCH' not in astrometry_params_names:
-        param = Parameter('POSEPOCH', value=default_values['POSEPOCH'])
-        astrometry_params += [param.auto_detect()]
     if 'RAJ' in astrometry_params_names and 'DECJ' in astrometry_params_names:
         astrometry_params = [param for param in astrometry_params if param._astrometry in ['General', 'Equatorial']]
     elif 'ELONG' in astrometry_params_names and 'ELAT' in astrometry_params_names:
@@ -243,30 +259,89 @@ def validate_parameters(params):
     elif 'GL' in astrometry_params_names and 'GB' in astrometry_params_names:
         astrometry_params = [param for param in astrometry_params if param._astrometry in ['General', 'Galactic']]
     else:
+        if not quiet:
+            print("Warning:: Astrometry parameters are missing.")
         return [], params
+    PM = False
+    for param_name in astrometry_params_names:
+        if 'PM' in param_name:
+            PM = True
+    if 'POSEPOCH' not in astrometry_params_names and PM:
+        pepoch = [param.value for param in spindown_params if param.name == 'PEPOCH']
+        param = Parameter('POSEPOCH', value=pepoch[0])
+        astrometry_params += [param.auto_detect()]
 
     # Check dispersion
+    if not quiet:
+        print("Checking timing model dispersion parameters...")
     dispersion_params = [param for param in params if type(param) is DispersionParameter]
     dispersion_params_names = [param.name for param in params if type(param) is DispersionParameter]
-
-    # Check spindown
-    spindown_params = [param for param in params if type(param) is SpindownParameter]
-    spindown_params_names = [param.name for param in params if type(param) is SpindownParameter]
-    if 'PEPOCH' not in spindown_params_names:
-        posepoch = [param.value for param in astrometry_params if param.name == 'POSEPOCH']
-        param = Parameter('PEPOCH', value=posepoch[0])
+    DM1 = False
+    for param in dispersion_params:
+        if param.name == 'DM1':
+            DM1 = float(param.value) != 0.0
+    if 'DMEPOCH' not in dispersion_params_names and DM1:
+        pepoch = [param.value for param in spindown_params if param.name == 'PEPOCH']
+        param = Parameter('DMEPOCH', value=pepoch[0])
         spindown_params += [param.auto_detect()]
 
     # Check binary model
+    if not quiet:
+        print("Checking timing model binary parameters...")
     binary_model = [param for param in params if type(param) is BinaryModel]
     binary_params = [param for param in params if type(param) is BinaryParameter]
     if len(binary_model) > 0:
+        if not binary_model[0].valid:
+            if not quiet:
+                print("Warning:: Unknown binary model.")
+            return [], params
         for param in binary_params:
             param.binary_model = binary_model[0].value
-        if not binary_model[0].valid:
+        binary_params = [param for param in params if type(param) is BinaryParameter and param.valid]
+        binary_params_name = [param.name for param in params if type(param) is BinaryParameter and param.valid]
+
+        missing = False
+        if binary_model[0].value == 'BT':
+            for param_name in ['T0', 'A1']:
+                if param_name not in binary_params_name:
+                    missing = True
+        if binary_model[0].value in ['DD', 'DDH', 'DDK', 'DDS']:
+            for param_name in ['T0', 'A1']:
+                if param_name not in binary_params_name:
+                    missing = True                
+        if binary_model[0].value in ['ELL1', 'ELL1H', 'ELL1K']:
+            for param_name in ['TASC']:
+                if param_name not in binary_params_name:
+                    missing = True                
+        if missing:
+            if not quiet:
+                print("Warning:: Binary model parameters are missing.")
             return [], params
 
     pint_params = miscellaneous_params + astrometry_params + dispersion_params + \
                   spindown_params + binary_model + binary_params
     extra_params = [param for param in params if param not in pint_params]
     return pint_params, extra_params
+
+def write_par_file(params, outfile=None):
+
+    PSR = [param.value for param in params if param.name == 'PSR'][0]
+
+    if outfile is None:
+        outfile = os.getcwd()+"/"+PSR+".par"
+    lines = []
+    for param in params:
+        name = param.name
+        value = param.value
+        error = ''
+        if param.error is not None:
+            error = param.error
+        if param.freeze:
+            fit = '0'
+        else:
+            fit = '1'
+        lines.append("{:<10} {:>22} {} {:<22}".format(name, value, fit, error))
+    lines = '\n'.join(lines)
+    with open(outfile, 'w') as file:
+        file.write(lines)
+    

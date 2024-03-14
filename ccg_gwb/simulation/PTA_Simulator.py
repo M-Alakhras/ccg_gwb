@@ -9,7 +9,7 @@ import datetime
 import pickle
 from tqdm.auto import tqdm
 from ccg_gwb import (CCG_ENV, CCG_PATH, CCG_CACHEDIR)
-from ccg_gwb.simulation import timing_model_simulation
+from ccg_gwb.simulation.timing_model_simulation import TimingModel_Simulator
 
         
 class PTA_Simulator(object):
@@ -30,6 +30,9 @@ class PTA_Simulator(object):
         self._current_signal = self.signals[0]
         self._begin = 'Not started yet.'
         self._finish = 'Not finished yet.'
+
+        if not os.path.exists(self.outdir):
+            os.mkdir(self.outdir)
 
         self.save()
 
@@ -71,7 +74,7 @@ class PTA_Simulator(object):
 
     @outdir.setter
     def outdir(self, value):
-        self._outdir = value
+        self._outdir = os.path.abspath(value)
 
     @property
     def status(self):
@@ -99,10 +102,13 @@ class PTA_Simulator(object):
         if self._begin == 'Not started yet.':
             self._begin = datetime.datetime.now()
         self.summary()
+        print("Start simulating...")
 
         # TODO:
         if self.status == 'init':
-            # 1- simulate par files
+            TM_Simulator = TimingModel_Simulator(ATNF=True, ATNF_Condition='P0 < 0.03', outdir=self.outdir+"/par")
+            TM_Simulator.start()
+            print(f'Timing models simulated and saved into: "{TM_Simulator.outdir}"')
             self._status = 'pars'
             self.save()
 
@@ -135,6 +141,7 @@ class PTA_Simulator(object):
             self._finish = datetime.datetime.now()
         self._status = 'finish'
         self.save()
+        print("Simulating has been finished.")
         self.summary()
 
     def validate_signals(self):

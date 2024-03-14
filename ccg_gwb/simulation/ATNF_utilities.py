@@ -43,7 +43,7 @@ def ATNF2PINT(param):
         pint_param = '_EDOT'
     return pint_param
 
-def parse_ephem(ephem):
+def parse_ephem(ephem, quiet=False):
     lines = ephem.split('\n')
     all_params = []
     for line in lines:
@@ -57,5 +57,5 @@ def parse_ephem(ephem):
             error = param[2]
         param = Parameter(ATNF2PINT(name), value=value, error=error)
         all_params.append(param.auto_detect())
-    pint_params, extra_params = validate_parameters(all_params)
+    pint_params, extra_params = validate_parameters(all_params, quiet=quiet)
     return pint_params
