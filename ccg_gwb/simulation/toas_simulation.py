@@ -57,6 +57,7 @@ class TOAs_Simulator(object):
         self._multi_freqs_in_epoch = multi_freqs_in_epoch
         self._flags = flags
         self._subtract_mean = subtract_mean
+        self._pardir = os.path.abspath(pardir)
         self._parfiles = parfiles
         self._nmodels = len(parfiles)
         self._outdir = os.path.abspath(outdir)
@@ -175,6 +176,13 @@ class TOAs_Simulator(object):
     @subtract_mean.setter
     def subtract_mean(self, value):
         self._subtract_mean = value
+
+    @property
+    def pardir(self):
+        return self._pardir
+    @pardir.setter
+    def pardir(self, value):
+        self._pardir = os.path.abspath(value)
     
     @property
     def parfiles(self):
@@ -199,9 +207,9 @@ class TOAs_Simulator(object):
 
     def start(self):
         if self.nmodels == 0:
-            parfiles = glob.glob(pardir+"/*.par")
+            parfiles = glob.glob(self.pardir+"/*.par")
             if len(parfiles) == 0:
-                print(f'Warning: timing model files not found in: "{pardir}"')
+                print(f'Warning: timing model files not found in: "{self.pardir}"')
                 return
             self._parfiles = parfiles
             self._nmodels = len(parfiles)
