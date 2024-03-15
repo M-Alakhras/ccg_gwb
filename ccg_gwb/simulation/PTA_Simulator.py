@@ -10,6 +10,7 @@ import pickle
 from tqdm.auto import tqdm
 from ccg_gwb import (CCG_ENV, CCG_PATH, CCG_CACHEDIR)
 from ccg_gwb.simulation.timing_model_simulation import TimingModel_Simulator
+from ccg_gwb.simulation.toas_simulation import TOAs_Simulator
 
         
 class PTA_Simulator(object):
@@ -33,6 +34,8 @@ class PTA_Simulator(object):
 
         if not os.path.exists(self.outdir):
             os.mkdir(self.outdir)
+        self.TimingModel_Simulator = TimingModel_Simulator(ATNF=True, ATNF_Condition='P0 < 0.03', outdir=self.outdir+"/par")
+        self.TOAs_Simulator = TOAs_Simulator(pardir=self.outdir+"/par",outdir=self.outdir+"/toas")
 
         self.save()
 
@@ -106,14 +109,15 @@ class PTA_Simulator(object):
 
         # TODO:
         if self.status == 'init':
-            TM_Simulator = TimingModel_Simulator(ATNF=True, ATNF_Condition='P0 < 0.03', outdir=self.outdir+"/par")
-            TM_Simulator.start()
-            print(f'Timing models simulated and saved into: "{TM_Simulator.outdir}"')
+            
+            self.TimingModel_Simulator.start()
+            print(f'Timing models have been simulated and saved into: "{self.TimingModel_Simulator.outdir}"')
             self._status = 'pars'
             self.save()
 
         if self.status == 'pars':
-            # 2- simulate toas
+            self.TOAs_Simulator.start()
+            print(f'Times of arrivals have been simulated and saved into: "{self.TOAs_Simulator.outdir}"')
             self._status = 'toas'
             self.save()
 
