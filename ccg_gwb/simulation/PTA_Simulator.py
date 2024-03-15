@@ -109,13 +109,14 @@ class PTA_Simulator(object):
 
         # TODO:
         if self.status == 'init':
-            
+            print("Simulating timing models...")
             self.TimingModel_Simulator.start()
             print(f'Timing models have been simulated and saved into: "{self.TimingModel_Simulator.outdir}"')
             self._status = 'pars'
             self.save()
 
         if self.status == 'pars':
+            print("Simulating times of arrivals...")
             self.TOAs_Simulator.start()
             print(f'Times of arrivals have been simulated and saved into: "{self.TOAs_Simulator.outdir}"')
             self._status = 'toas'

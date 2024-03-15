@@ -68,7 +68,7 @@ class Parameter(object):
         if self.name in ['BINARY']:
             return BinaryModel(self.value)
         FB_deriv = ['FB'+str(i) for i in range(10)]
-        if self.name in ['PB', 'PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
+        if self.name in ['PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
                          'T0', 'OM', 'OMDOT', 'M2', 'SINI', 'A0', 'B0', 
                          'GAMMA', 'DR', 'DTHETA', 'H3', 'H4', 'STIGMA', 'KIN', 
                          'KOM', 'K96', 'SHAPMAX', 'TASC', 'EPS1', 'EPS2', 
@@ -152,7 +152,7 @@ class BinaryModel(Parameter):
         self.check_validity()
 
     def check_validity(self):
-        if self.value not in ['Generic', 'BT', 'DD', 'DDH', 'DDK', 'DDS', 
+        if self.value not in ['Generic', 'BT', 'DD', 'DDK', 'DDS', 
                               'ELL1', 'ELL1H', 'ELL1K']:
             self._valid = False
 
@@ -177,40 +177,40 @@ class BinaryParameter(Parameter):
     def check_validity(self):
         FB_deriv = ['FB'+str(i) for i in range(10)]
         if self.binary_model == 'BT':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
                                  'T0', 'OM', 'OMDOT', 'GAMMA']+FB_deriv:
                 self._valid = False
         if self.binary_model == 'DD':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
                                  'T0', 'OM', 'OMDOT', 'M2', 'SINI', 'A0', 'B0', 
                                  'GAMMA', 'DR', 'DTHETA']+FB_deriv:
                 self._valid = False
-        if self.binary_model == 'DDH':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
-                                 'T0', 'OM', 'OMDOT', 'A0', 'B0', 'GAMMA', 'DR', 
-                                 'DTHETA', 'H3', 'STIGMA']+FB_deriv:
-                self._valid = False
+        # if self.binary_model == 'DDH':
+        #     if self.name not in ['PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
+        #                          'T0', 'OM', 'OMDOT', 'A0', 'B0', 'GAMMA', 'DR', 
+        #                          'DTHETA', 'H3', 'STIGMA']+FB_deriv:
+        #         self._valid = False
         if self.binary_model == 'DDK':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
                                  'T0', 'OM', 'OMDOT', 'M2', 'GAMMA', 'A0', 'B0', 
                                  'DR', 'DTHETA', 'KIN', 'KOM', 'K96']+FB_deriv:
                 self._valid = False
         if self.binary_model == 'DDS':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'ECC', 'EDOT', 
                                  'T0', 'OM', 'OMDOT', 'M2', 'GAMMA', 'A0', 'B0', 
                                  'DR', 'DTHETA', 'SHAPMAX']+FB_deriv:
                 self._valid = False
         if self.binary_model == 'ELL1':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'M2', 'SINI', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'M2', 'SINI', 
                                  'TASC', 'EPS1', 'EPS2', 'EPS1DOT', 'EPS2DOT']+FB_deriv:
                 self._valid = False
         if self.binary_model == 'ELL1H':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'TASC', 'EPS1', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'TASC', 'EPS1', 
                                  'EPS2', 'EPS1DOT', 'EPS2DOT', 'H3', 'H4', 
                                  'STIGMA', 'NHARMS']+FB_deriv:
                 self._valid = False
         if self.binary_model == 'ELL1K':
-            if self.name not in ['PB', 'PBDOT', 'A1', 'A1DOT', 'M2', 'SINI', 
+            if self.name not in ['PBDOT', 'A1', 'A1DOT', 'M2', 'SINI', 
                                  'TASC', 'EPS1', 'EPS2', 'OMDOT', 'LNEDOT']+FB_deriv:
                 self._valid = False
             
@@ -305,7 +305,7 @@ def validate_parameters(params, quiet=False):
             for param_name in ['T0', 'A1']:
                 if param_name not in binary_params_name:
                     missing = True
-        if binary_model[0].value in ['DD', 'DDH', 'DDK', 'DDS']:
+        if binary_model[0].value in ['DD', 'DDK', 'DDS']:
             for param_name in ['T0', 'A1']:
                 if param_name not in binary_params_name:
                     missing = True                
@@ -340,7 +340,9 @@ def write_par_file(params, outfile=None):
             fit = '0'
         else:
             fit = '1'
-        lines.append("{:<10} {:>22} {} {:<22}".format(name, value, fit, error))
+        if type(param) in [MiscellaneousParameter, BinaryModel]:
+            fit = ''
+        lines.append("{:<10} {:>22} {:1} {:<22}".format(name, value, fit, error))
     lines = '\n'.join(lines)
     with open(outfile, 'w') as file:
         file.write(lines)

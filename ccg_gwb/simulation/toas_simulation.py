@@ -7,6 +7,8 @@ import os
 import glob
 from astropy import units as u
 from astropy.time import Time
+from tqdm.auto import tqdm
+from pint.models import get_model
 
 class TOAs_Simulator(object):
 
@@ -196,4 +198,18 @@ class TOAs_Simulator(object):
         self._outdirt = os.path.abspath(value)
 
     def start(self):
-        pass
+        if self.nmodels == 0:
+            parfiles = glob.glob(pardir+"/*.par")
+            if len(parfiles) == 0:
+                print(f'Warning: timing model files not found in: "{pardir}"')
+                return
+            self._parfiles = parfiles
+            self._nmodels = len(parfiles)
+        for parfile in tqdm(self.parfiles):
+            if parfile[-8:] == '_tdb.par':
+                continue
+            parfile_tdb = parfile.replace('.par', '_tdb.par')
+            if os.path.exists(parfile_tdb):
+                parfile = parfile_tdb
+            model = get_model(parfile)
+

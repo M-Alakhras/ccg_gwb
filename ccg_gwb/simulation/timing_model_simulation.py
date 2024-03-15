@@ -3,8 +3,11 @@
 Simulate timing models.
 """
 
+from ccg_gwb import CCG_CACHEDIR, CCG_ENV, CCG_PATH
 from ccg_gwb.simulation.ATNF_utilities import query_ATNF, ATNF_ephemeris, parse_ephem
 from ccg_gwb.simulation.timing_model_parameters import write_par_file
+from tqdm.auto import tqdm
+import subprocess
 import os
 
 class TimingModel_Simulator(object):
@@ -52,9 +55,13 @@ class TimingModel_Simulator(object):
             ephems = ATNF_ephemeris(query)
             all_params = [parse_ephem(ephem, quiet=True) for ephem in ephems]
             valid_params = [params for params in all_params if len(params) > 0]
-            for params in valid_params:
+            for params in tqdm(valid_params):
                 PSR = [param.value for param in params if param.name == 'PSR'][0]
-                write_par_file(params, outfile=self.outdir+"/"+PSR+".par")
+                UNITS = [param.value for param in params if param.name == 'UNITS'][0]
+                file_name = self.outdir+"/"+PSR+".par"
+                write_par_file(params, outfile=file_name)
+                if UNITS == 'TCB':
+                    subprocess.run(['tcb2tdb', file_name, file_name.replace('.par','_tdb.par')], env=CCG_ENV)
         else:
             # TODO: simulate parameters.
             pass
