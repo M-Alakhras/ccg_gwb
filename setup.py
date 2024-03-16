@@ -29,7 +29,7 @@ setup(
     url="https://github.com/M-Alakhras/ccg_gwb",
     packages=find_packages(include=["ccg_gwb", "ccg_gwb.*"]),
     package_dir={"ccg_gwb": "ccg_gwb"},
-    python_requires=">=3.9, <=3.11",
+    python_requires=">=3.9, <3.12",
     install_requires=requirements,
     license="MIT license",
     zip_safe=False,
