@@ -5,9 +5,6 @@
 import pytest
 
 
-from ccg_gwb import ccg_gwb
-
-
 @pytest.fixture
 def response():
     """Sample pytest fixture.
