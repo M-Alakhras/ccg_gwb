@@ -17,6 +17,8 @@ from tests.ccg_gwb_test_data import datadir
 def test_PTA_Simulator():
     Sim = PTA_Simulator("test_simulation")
     assert Sim.outdir == os.getcwd()
+    Sim.npsrs = 10
+    Sim.nrealizations = 20
     Sim.ATNF = True
     assert Sim.ATNF is True
     Sim.ATNF_Condition = "P0 < 0.002"

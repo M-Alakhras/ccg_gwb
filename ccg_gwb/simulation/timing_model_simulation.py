@@ -15,7 +15,7 @@ from ccg_gwb.simulation.timing_model_parameters import write_par_file
 
 class TimingModel_Simulator(object):
 
-    def __init__(self, ATNF=False, ATNF_Condition="", outdir=None):
+    def __init__(self, ATNF=False, ATNF_Condition="", outdir=None, quiet=False):
 
         if outdir is None:
             outdir = os.getcwd()
@@ -23,6 +23,7 @@ class TimingModel_Simulator(object):
         self._ATNF = ATNF
         self._ATNF_Condition = ATNF_Condition
         self._outdir = os.path.abspath(outdir)
+        self.quiet = quiet
 
     @property
     def ATNF(self):
@@ -55,7 +56,7 @@ class TimingModel_Simulator(object):
         if self.ATNF:
             query = query_ATNF(condition=self.ATNF_Condition)
             ephems = ATNF_ephemeris(query)
-            all_params = [parse_ephem(ephem, quiet=True) for ephem in ephems]
+            all_params = [parse_ephem(ephem, quiet=self.quiet) for ephem in ephems]
             valid_params = [params for params in all_params if len(params) > 0]
             for params in tqdm(valid_params):
                 PSR = [param.value for param in params if param.name == "PSR"][0]

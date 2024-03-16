@@ -18,7 +18,15 @@ from ccg_gwb.simulation.toas_simulation import TOAs_Simulator
 class PTA_Simulator(object):
 
     def __init__(
-        self, name, npsrs=20, nrealizations=200, signals=None, outdir=None, ATNF=True, ATNF_Condition="P0 < 0.03"
+        self,
+        name,
+        npsrs=20,
+        nrealizations=200,
+        signals=None,
+        outdir=None,
+        ATNF=True,
+        ATNF_Condition="P0 < 0.03",
+        quiet=False,
     ):
 
         if outdir is None:
@@ -35,9 +43,10 @@ class PTA_Simulator(object):
         self._current_signal = self.signals[0]
         self._begin = "Not started yet."
         self._finish = "Not finished yet."
+        self.quiet = quiet
 
         self.TimingModel_Simulator = TimingModel_Simulator(
-            ATNF=ATNF, ATNF_Condition=ATNF_Condition, outdir=self.outdir + "/par"
+            ATNF=ATNF, ATNF_Condition=ATNF_Condition, outdir=self.outdir + "/par", quiet=self.quiet
         )
         self.TOAs_Simulator = TOAs_Simulator(pardir=self.outdir + "/par", outdir=self.outdir + "/toas")
 
