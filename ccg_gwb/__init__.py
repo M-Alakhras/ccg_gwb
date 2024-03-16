@@ -5,7 +5,7 @@ import sys
 from appdirs import user_cache_dir
 
 CCG_ENV = os.environ.copy()
-CCG_PATH = sys.exec_prefix
+CCG_PATH = sys.exec_prefix+"/bin"
 CCG_ENV["PATH"] = CCG_PATH + ":" + CCG_ENV["PATH"]
 CCG_CACHEDIR = user_cache_dir(appname="ccg_gwb", appauthor=False)
 

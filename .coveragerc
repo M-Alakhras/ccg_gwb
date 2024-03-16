@@ -1,0 +1,12 @@
+[run]
+source = ccg_gwb
+omit =
+    ccg_gwb/__init__*
+    ccg_gwb/simulation/__init__*
+plugins =
+    coverage_conditional_plugin
+
+[coverage_conditional_plugin]
+rules =
+    "sys_version_info >= (3, 8)": py-gte-38
+    "sys_version_info < (3, 8)": py-le-38

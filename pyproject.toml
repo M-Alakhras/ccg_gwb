@@ -1,0 +1,35 @@
+[tool.black]
+line-length = 120
+target_version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | _build
+    | buck-out
+    | build
+    | dist
+    | docs
+    | .ccg_gwb
+    | ccg_gwb/src
+  )/
+  | ccg_gwb/version.py
+)
+'''
+
+[tool.setuptools_scm]
+write_to = "ccg_gwb/version.py"
+
+[build-system]
+requires = [
+    "setuptools>=40.8.0",
+    "wheel",
+    "setuptools_scm[toml]>=6.0",
+]
+build-backend = "setuptools.build_meta"

@@ -1,10 +1,12 @@
-.PHONY: clean clean-build clean-pyc clean-test coverage dist docs help install lint lint/flake8 lint/black
+.PHONY: clean clean-build clean-pyc clean-test docs help
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
-
-from urllib.request import pathname2url
+try:
+    from urllib import pathname2url
+except:
+    from urllib.request import pathname2url
 
 webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
 endef
@@ -26,6 +28,22 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
+init:
+    @python3 -m venv .ccg_gwb --prompt ccg_gwb
+	@./.ccg_gwb/bin/python3 -m pip install -U pip setuptools wheel
+	@./.ccg_gwb/bin/python3 -m pip install -r requirements.txt -U
+	@./.ccg_gwb/bin/python3 -m pip install -r requirements_dev.txt -U
+	@./.ccg_gwb/bin/python3 -m pre_commit install --install-hooks --overwrite
+	@./.ccg_gwb/bin/python3 -m pip install -e .
+	@echo "run source .ccg_gwb/bin/activate to activate environment"
+
+format:
+    black .
+
+lint:
+    black --check .
+    flake8 .
+
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
@@ -45,31 +63,27 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
 	rm -f .coverage
 	rm -fr htmlcov/
-	rm -fr .pytest_cache
+    rm -fr coverage.xml
 
-lint/flake8: ## check style with flake8
-	flake8 ccg_gwb tests
-lint/black: ## check style with black
-	black --check ccg_gwb tests
+COV_COVERAGE_PERCENT ?= 85
+test: lint ## run tests quickly with the default Python
+	pytest -v --duration=10 --full-trace --cov-report html --cov-report xml \
+        --cov-config .coveragerc --cov-fail-under=$(COV_COVERAGE_PERCENT) \
+        --cov=ccg_gwb tests
 
-lint: lint/flake8 lint/black ## check style
-
-test: ## run tests quickly with the default Python
-	pytest
-
-test-all: ## run tests on every Python version with tox
-	tox
-
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source ccg_gwb -m pytest
-	coverage report -m
-	coverage html
+coverage: test ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
+jupyter-docs: ## biuld jupyter notebook docs
+	jupyter nbconvert --template docs/nb-rst.tpl --to rst docs/_static/notebooks/*.ipynb --output-dir docs/
+	cp -r docs/_static/notebooks/img docs/
+
 docs: ## generate Sphinx HTML documentation, including API docs
-	rm -f docs/ccg_gwb.rst
+	rm -f docs/ccg_gwb*.rst
 	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ ccg_gwb
+    rm -rf docs/_build
+	sphinx-apidoc --ext-autodoc -o docs/ -M ccg_gwb
+    sphinx-apidoc --ext-autodoc -o docs/ -M tests
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
@@ -77,13 +91,6 @@ docs: ## generate Sphinx HTML documentation, including API docs
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
-release: dist ## package and upload a release
-	twine upload dist/*
-
 dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
-
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+    python -m build --sdist --wheel
+    ls -l dist

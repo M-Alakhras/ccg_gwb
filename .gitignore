@@ -1,3 +1,6 @@
+# text editor tmp files
+.*.swp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -20,7 +23,6 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -53,26 +55,30 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
 
 # Sphinx documentation
 docs/_build/
+.ipynb_checkpoints/
 
 # PyBuilder
 target/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
 # pyenv
 .python-version
+
+# mac stuff:
+.DS_Store
+
+# virtual environment
+.ccg_gwb
+# standard-ish virtual environment for VSCode
+.venv
+
+# vscode
+.vscode
+
+# scm
+ccg_gwb/version.py
 
 # celery beat schedule file
 celerybeat-schedule
