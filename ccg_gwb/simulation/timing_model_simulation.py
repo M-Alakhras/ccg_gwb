@@ -24,9 +24,6 @@ class TimingModel_Simulator(object):
         self._ATNF_Condition = ATNF_Condition
         self._outdir = os.path.abspath(outdir)
 
-        if not os.path.exists(self.outdir):
-            os.mkdir(self.outdir)
-
     @property
     def ATNF(self):
         return self._ATNF
@@ -49,9 +46,12 @@ class TimingModel_Simulator(object):
 
     @outdir.setter
     def outdir(self, value):
-        self._outdirt = os.path.abspath(value)
+        self._outdir = os.path.abspath(value)
 
     def start(self):
+        if not os.path.exists(self.outdir):
+            os.mkdir(self.outdir)
+
         if self.ATNF:
             query = query_ATNF(condition=self.ATNF_Condition)
             ephems = ATNF_ephemeris(query)

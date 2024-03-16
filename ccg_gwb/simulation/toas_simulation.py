@@ -67,9 +67,6 @@ class TOAs_Simulator(object):
         self._nmodels = len(parfiles)
         self._outdir = os.path.abspath(outdir)
 
-        if not os.path.exists(self.outdir):
-            os.mkdir(self.outdir)
-
     @property
     def start_time(self):
         return self._start_time
@@ -205,6 +202,8 @@ class TOAs_Simulator(object):
     @pardir.setter
     def pardir(self, value):
         self._pardir = os.path.abspath(value)
+        self._parfiles = glob.glob(self._pardir + "/*.par")
+        self._nmodels = len(self._parfiles)
 
     @property
     def parfiles(self):
@@ -228,9 +227,11 @@ class TOAs_Simulator(object):
 
     @outdir.setter
     def outdir(self, value):
-        self._outdirt = os.path.abspath(value)
+        self._outdir = os.path.abspath(value)
 
     def start(self):
+        if not os.path.exists(self.outdir):
+            os.mkdir(self.outdir)
         if self.nmodels == 0:
             parfiles = glob.glob(self.pardir + "/*.par")
             if len(parfiles) == 0:
@@ -241,7 +242,8 @@ class TOAs_Simulator(object):
         for parfile in tqdm(self.parfiles):
             if parfile[-8:] == "_tdb.par":
                 continue
+            parfile_to_read = parfile
             parfile_tdb = parfile.replace(".par", "_tdb.par")
             if os.path.exists(parfile_tdb):
-                parfile = parfile_tdb
-            _ = get_model(parfile)
+                parfile_to_read = parfile_tdb
+            _ = get_model(parfile_to_read)

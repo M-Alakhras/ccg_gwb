@@ -20,12 +20,16 @@ def query_ATNF(condition=None):
     return query
 
 
-def ATNF_ephemeris(query):
-    CACHE_file = CCG_CACHEDIR + "/ephems.pkl"
-    if os.path.exists(CACHE_file):
-        with open(CACHE_file, "rb") as file:
-            ephems = pickle.load(file)
-        return ephems
+def ATNF_ephemeris(query, cache=True):
+    if query.condition is not None:
+        CACHE_file = CCG_CACHEDIR + "/" + query.condition + "_ephems.pkl"
+    else:
+        CACHE_file = CCG_CACHEDIR + "/ephems.pkl"
+    if cache:
+        if os.path.exists(CACHE_file):
+            with open(CACHE_file, "rb") as file:
+                ephems = pickle.load(file)
+            return ephems
     psrs = query.get_pulsars()
     ephems = []
     for psr in tqdm(psrs):

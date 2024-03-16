@@ -17,7 +17,9 @@ from ccg_gwb.simulation.toas_simulation import TOAs_Simulator
 
 class PTA_Simulator(object):
 
-    def __init__(self, name, npsrs=20, nrealizations=200, signals=None, outdir=None):
+    def __init__(
+        self, name, npsrs=20, nrealizations=200, signals=None, outdir=None, ATNF=True, ATNF_Condition="P0 < 0.03"
+    ):
 
         if outdir is None:
             outdir = os.getcwd()
@@ -34,10 +36,8 @@ class PTA_Simulator(object):
         self._begin = "Not started yet."
         self._finish = "Not finished yet."
 
-        if not os.path.exists(self.outdir):
-            os.mkdir(self.outdir)
         self.TimingModel_Simulator = TimingModel_Simulator(
-            ATNF=True, ATNF_Condition="P0 < 0.03", outdir=self.outdir + "/par"
+            ATNF=ATNF, ATNF_Condition=ATNF_Condition, outdir=self.outdir + "/par"
         )
         self.TOAs_Simulator = TOAs_Simulator(pardir=self.outdir + "/par", outdir=self.outdir + "/toas")
 
@@ -74,6 +74,7 @@ class PTA_Simulator(object):
     @signals.setter
     def signals(self, value):
         self._signals = value
+        self.validate_signals()
 
     @property
     def outdir(self):
@@ -81,7 +82,27 @@ class PTA_Simulator(object):
 
     @outdir.setter
     def outdir(self, value):
-        self._outdir = os.path.abspath(value)
+        full_path = os.path.abspath(value)
+        self._outdir = full_path
+        self.TimingModel_Simulator.outdir = full_path + "/par"
+        self.TOAs_Simulator.pardir = full_path + "/par"
+        self.TOAs_Simulator.outdir = full_path + "/toas"
+
+    @property
+    def ATNF(self):
+        return self.TimingModel_Simulator.ATNF
+
+    @ATNF.setter
+    def ATNF(self, value):
+        self.TimingModel_Simulator.ATNF = value
+
+    @property
+    def ATNF_Condition(self):
+        return self.TimingModel_Simulator.ATNF_Condition
+
+    @ATNF_Condition.setter
+    def ATNF_Condition(self, value):
+        self.TimingModel_Simulator.ATNF_Condition = value
 
     @property
     def status(self):
@@ -101,6 +122,8 @@ class PTA_Simulator(object):
 
     def start(self, restart=False):
         # initialization
+        if not os.path.exists(self.outdir):
+            os.mkdir(self.outdir)
         if restart:
             self._begin = "Not started yet."
             self._finish = "Not finished yet."

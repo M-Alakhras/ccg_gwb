@@ -334,7 +334,7 @@ def validate_parameters(params, quiet=False):
 
     # Check miscellaneous
     if not quiet:
-        print("Checking timing model ing miscells...")
+        print("Checking timing model miscellaneous parameters...")
     miscellaneous_params = [param for param in params if type(param) is MiscellaneousParameter]
     miscellaneous_params_names = [param.name for param in params if type(param) is MiscellaneousParameter]
     if "PSR" not in miscellaneous_params_names:

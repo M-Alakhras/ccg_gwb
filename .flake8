@@ -19,3 +19,4 @@ exclude =
     .ccg_gwb
     ccg_gwb/src
     .venv
+    .ipynb_checkpoints
