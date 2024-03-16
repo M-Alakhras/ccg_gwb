@@ -12,4 +12,4 @@ CCG_CACHEDIR = user_cache_dir(appname="ccg_gwb", appauthor=False)
 
 __author__ = """Mohammad Alakhras"""
 __email__ = "mohammadalakhras1989@gmail.com"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
