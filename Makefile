@@ -29,7 +29,7 @@ help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 init:
-    @python3 -m venv .ccg_gwb --prompt ccg_gwb
+	@python3 -m venv .ccg_gwb --prompt ccg_gwb
 	@./.ccg_gwb/bin/python3 -m pip install -U pip setuptools wheel
 	@./.ccg_gwb/bin/python3 -m pip install -r requirements.txt -U
 	@./.ccg_gwb/bin/python3 -m pip install -r requirements_dev.txt -U
@@ -38,11 +38,11 @@ init:
 	@echo "run source .ccg_gwb/bin/activate to activate environment"
 
 format:
-    black .
+	black .
 
 lint:
-    black --check .
-    flake8 .
+	black --check .
+	flake8 .
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
@@ -63,7 +63,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
 	rm -f .coverage
 	rm -fr htmlcov/
-    rm -fr coverage.xml
+	rm -fr coverage.xml
 
 COV_COVERAGE_PERCENT ?= 85
 test: lint ## run tests quickly with the default Python
@@ -81,9 +81,9 @@ jupyter-docs: ## biuld jupyter notebook docs
 docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/ccg_gwb*.rst
 	rm -f docs/modules.rst
-    rm -rf docs/_build
+	rm -rf docs/_build
 	sphinx-apidoc --ext-autodoc -o docs/ -M ccg_gwb
-    sphinx-apidoc --ext-autodoc -o docs/ -M tests
+	sphinx-apidoc --ext-autodoc -o docs/ -M tests
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
@@ -92,5 +92,5 @@ servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
 dist: clean ## builds source and wheel package
-    python -m build --sdist --wheel
-    ls -l dist
+	python -m build --sdist --wheel
+	ls -l dist
