@@ -22,7 +22,7 @@ def test_PTA_Simulator():
     Sim.ATNF = True
     assert Sim.ATNF is True
     Sim.ATNF_Condition = "P0 < 0.002"
-    assert Sim.ATNF_Condition == "P0 < 0.002"
+    assert Sim.ATNF_Condition == "P0 < 0.0015"
     Sim.outdir = datadir + "/test_simulation"
     assert Sim.outdir == datadir + "/test_simulation"
     assert Sim.TimingModel_Simulator.outdir == datadir + "/test_simulation/par"
@@ -38,7 +38,9 @@ def test_PTA_Simulator():
     par_files = glob.glob(Sim.TimingModel_Simulator.outdir + "/*.par")
     msg = "Timing models not simulated"
     assert len(par_files) > 0, msg
-    # toas_files = glob.glob(Sim.TOAs_Simulator.outdir+"/*.toas")
+    toas_files = glob.glob(Sim.TOAs_Simulator.outdir + "/*.toas")
+    msg = "TOAs not simulated"
+    assert len(toas_files) > 0, msg
     list_all_simulations()
     Sim_loaded = load_Simulator("badname__simulation_&123$67!!")
     Sim_loaded = load_Simulator("test_simulation")
