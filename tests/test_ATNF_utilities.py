@@ -17,8 +17,8 @@ from tests.ccg_gwb_test_data import datadir
 def test_ATNF_ephemeris():
     """Check querying ATNF."""
 
-    CACHE_file = CCG_CACHEDIR + "/P0 < 0.002_ephems.pkl"
-    query = query_ATNF(condition="P0 < 0.002")
+    CACHE_file = CCG_CACHEDIR + "/P0 < 0.0015_ephems.pkl"
+    query = query_ATNF(condition="P0 < 0.0015")
     msg = "querying ATNF failed"
     assert len(query.get_pulsars()) > 0, msg
 
@@ -38,6 +38,11 @@ def test_parse_ephem():
         ephem = file.read()
     "\n".join(ephem)
     params = parse_ephem(ephem, quiet=True)
-    PSR = [param.value for param in params if param.name == "PSR"][0]
+    pint_params = params[0]
+    extra_params = params[1]
+    PSR = [param.value for param in pint_params if param.name == "PSR"][0]
+    msg = "incorrect pulsar name"
+    assert PSR == "J0023+0923", msg
+    PSR = [param.value for param in extra_params if param.name == "PSR"][0]
     msg = "incorrect pulsar name"
     assert PSR == "J0023+0923", msg

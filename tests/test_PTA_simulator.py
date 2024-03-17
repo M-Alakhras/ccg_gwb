@@ -21,7 +21,7 @@ def test_PTA_Simulator():
     Sim.nrealizations = 20
     Sim.ATNF = True
     assert Sim.ATNF is True
-    Sim.ATNF_Condition = "P0 < 0.002"
+    Sim.ATNF_Condition = "P0 < 0.0015"
     assert Sim.ATNF_Condition == "P0 < 0.0015"
     Sim.outdir = datadir + "/test_simulation"
     assert Sim.outdir == datadir + "/test_simulation"
@@ -48,8 +48,12 @@ def test_PTA_Simulator():
     assert Sim_loaded.name == "test_simulation", msg
 
     # cleaning
-    for parfile in par_files:
-        os.remove(parfile)
+    parfiles = glob.glob(Sim.TimingModel_Simulator.outdir + "/*.par")
+    extrafiles = glob.glob(Sim.TimingModel_Simulator.outdir + "/*.extra")
+    toasfiles = glob.glob(Sim.TOAs_Simulator.outdir + "/*.toas")
+    errorfiles = glob.glob(Sim.TOAs_Simulator.outdir + "/*.error")
+    for file in parfiles + extrafiles + toasfiles + errorfiles:
+        os.remove(file)
     os.rmdir(Sim.TimingModel_Simulator.outdir)
     os.rmdir(Sim.TOAs_Simulator.outdir)
     os.rmdir(Sim.outdir)
