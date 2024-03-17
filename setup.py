@@ -14,6 +14,7 @@ requirements = [
     "pint-pulsar>=0.9.8",
     "psrqpy>=1.2.8",
     "tqdm>=4.66.2",
+    "enterprise-pulsar>=3.3.3",
 ]
 
 test_requirements = []
