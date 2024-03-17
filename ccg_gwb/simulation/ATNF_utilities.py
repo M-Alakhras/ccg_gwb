@@ -68,4 +68,4 @@ def parse_ephem(ephem, quiet=False):
         param = Parameter(ATNF2PINT(name), value=value, error=error)
         all_params.append(param.auto_detect())
     pint_params, extra_params = validate_parameters(all_params, quiet=quiet)
-    return pint_params
+    return [pint_params, extra_params]

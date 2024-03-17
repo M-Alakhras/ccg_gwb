@@ -26,7 +26,7 @@ class PTA_Simulator(object):
         outdir=None,
         ATNF=True,
         ATNF_Condition="P0 < 0.03",
-        quiet=False,
+        quiet=True,
     ):
 
         if outdir is None:
@@ -143,7 +143,6 @@ class PTA_Simulator(object):
         self.summary()
         print("Start simulating...")
 
-        # TODO:
         if self.status == "init":
             print("Simulating timing models...")
             self.TimingModel_Simulator.start()
@@ -158,6 +157,7 @@ class PTA_Simulator(object):
             self._status = "toas"
             self.save()
 
+        # TODO:
         if self.status == "toas":
             # 3- create pulsar objects
             self._status = "psrs"

@@ -15,7 +15,7 @@ from tests.ccg_gwb_test_data import datadir
 
 
 def test_PTA_Simulator():
-    Sim = PTA_Simulator("test_simulation")
+    Sim = PTA_Simulator("test_simulation", quiet=False)
     assert Sim.outdir == os.getcwd()
     Sim.npsrs = 10
     Sim.nrealizations = 20

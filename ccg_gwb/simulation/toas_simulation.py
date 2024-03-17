@@ -5,10 +5,13 @@ Simulate times of arrivals (TOAs).
 
 import glob
 import os
+import pickle
 
+import numpy as np
 from astropy import units as u
 from astropy.time import Time
 from pint.models import get_model
+from pint.simulation import make_fake_toas_uniform
 from tqdm.auto import tqdm
 
 
@@ -18,7 +21,7 @@ class TOAs_Simulator(object):
         self,
         start_time="2000-01-01 00:00:00",
         end_time="2020-01-01 00:00:00",
-        cadence=30,
+        sampling_interval=30,
         fuzz=0.0,
         radio_frequency=1400.0,
         observatory="GBT",
@@ -31,7 +34,6 @@ class TOAs_Simulator(object):
         include_gps=False,
         multi_freqs_in_epoch=False,
         flags=None,
-        subtract_mean=True,
         pardir=None,
         outdir=None,
     ):
@@ -48,7 +50,9 @@ class TOAs_Simulator(object):
 
         self._start_time = Time(start_time, format="iso")
         self._end_time = Time(end_time, format="iso")
-        self._cadence = cadence * u.d
+        self._sampling_interval = sampling_interval * u.d
+        self._sampling_frequency = (1 / (sampling_interval * u.d)).to(u.Hz)
+        self.calculate_ntoas()
         self._fuzz = fuzz * u.d
         self._radio_frequency = radio_frequency * u.MHz
         self._observatory = observatory
@@ -61,7 +65,6 @@ class TOAs_Simulator(object):
         self._include_gps = include_gps
         self._multi_freqs_in_epoch = multi_freqs_in_epoch
         self._flags = flags
-        self._subtract_mean = subtract_mean
         self._pardir = os.path.abspath(pardir)
         self._parfiles = parfiles
         self._nmodels = len(parfiles)
@@ -74,6 +77,7 @@ class TOAs_Simulator(object):
     @start_time.setter
     def start_time(self, value):
         self._start_time = Time(value, format="iso")
+        self.calculate_ntoas()
 
     @property
     def end_time(self):
@@ -82,14 +86,35 @@ class TOAs_Simulator(object):
     @end_time.setter
     def end_time(self, value):
         self._end_time = Time(value, format="iso")
+        self.calculate_ntoas()
 
     @property
-    def cadence(self):
-        return self._cadence
+    def sampling_interval(self):
+        return self._sampling_interval
 
-    @cadence.setter
-    def cadence(self, value):
-        self._cadence = value * u.d
+    @sampling_interval.setter
+    def sampling_interval(self, value):
+        self._sampling_interval = value * u.d
+        self._sampling_frequency = (1 / (value * u.d)).to(u.Hz)
+        self.calculate_ntoas()
+
+    @property
+    def sampling_frequency(self):
+        return self._sampling_frequency
+        self.calculate_ntoas()
+
+    @sampling_frequency.setter
+    def sampling_frequency(self, value):
+        self._sampling_frequency = value * u.Hz
+        self._sampling_interval = (1 / (value * u.Hz)).to(u.d)
+
+    @property
+    def ntoas(self):
+        return self._ntoas
+
+    @ntoas.setter
+    def ntoas(self, value):
+        print("Warning:: Number of toas are calculated automatically")
 
     @property
     def fuzz(self):
@@ -188,14 +213,6 @@ class TOAs_Simulator(object):
         self._flags = value
 
     @property
-    def subtract_mean(self):
-        return self._subtract_mean
-
-    @subtract_mean.setter
-    def subtract_mean(self, value):
-        self._subtract_mean = value
-
-    @property
     def pardir(self):
         return self._pardir
 
@@ -229,6 +246,10 @@ class TOAs_Simulator(object):
     def outdir(self, value):
         self._outdir = os.path.abspath(value)
 
+    def calculate_ntoas(self):
+        time = np.arange(self.start_time.mjd, self.end_time.mjd, self.sampling_interval.value)
+        self._ntoas = len(time)
+
     def start(self):
         if not os.path.exists(self.outdir):
             os.mkdir(self.outdir)
@@ -246,4 +267,31 @@ class TOAs_Simulator(object):
             parfile_tdb = parfile.replace(".par", "_tdb.par")
             if os.path.exists(parfile_tdb):
                 parfile_to_read = parfile_tdb
-            _ = get_model(parfile_to_read)
+            model = get_model(parfile_to_read)
+            toas_file = self.outdir + "/" + model.PSR.value + ".toas"
+            toas_error_file = self.outdir + "/" + model.PSR.value + ".error"
+            if not os.path.exists(toas_file):
+                toas_error = 10 ** (0.18 + 0.636 * np.random.normal(size=self.ntoas)) * u.us
+                toas = make_fake_toas_uniform(
+                    model=model,
+                    startMJD=self.start_time,
+                    endMJD=self.end_time,
+                    ntoas=self.ntoas,
+                    fuzz=self.fuzz,
+                    freq=self.radio_frequency,
+                    obs=self.observatory,
+                    error=toas_error,
+                    add_noise=self.add_noise,
+                    add_correlated_noise=self.add_correlated_noise,
+                    wideband=self.wideband,
+                    wideband_dm_error=self.wideband_dm_error,
+                    name=self.name_prefix,
+                    multi_freqs_in_epoch=self.multi_freqs_in_epoch,
+                    include_bipm=self.include_bipm,
+                    include_gps=self.include_gps,
+                    flags=self.flags,
+                )
+                with open(toas_file, "wb") as file:
+                    pickle.dump(toas, file)
+                with open(toas_error_file, "wb") as file:
+                    pickle.dump(toas_error, file)

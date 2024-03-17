@@ -57,14 +57,21 @@ class TimingModel_Simulator(object):
             query = query_ATNF(condition=self.ATNF_Condition)
             ephems = ATNF_ephemeris(query)
             all_params = [parse_ephem(ephem, quiet=self.quiet) for ephem in ephems]
-            valid_params = [params for params in all_params if len(params) > 0]
+            valid_params = [params for params in all_params if len(params[0]) > 0]
             for params in tqdm(valid_params):
-                PSR = [param.value for param in params if param.name == "PSR"][0]
-                UNITS = [param.value for param in params if param.name == "UNITS"][0]
+                pint_params = params[0]
+                extra_params = params[1]
+                PSR = [param.value for param in pint_params if param.name == "PSR"][0]
+                UNITS = [param.value for param in pint_params if param.name == "UNITS"][0]
                 file_name = self.outdir + "/" + PSR + ".par"
-                write_par_file(params, outfile=file_name)
+                extra_file_name = self.outdir + "/" + PSR + ".extra"
+                if not os.path.exists(file_name):
+                    write_par_file(pint_params, outfile=file_name)
+                if not os.path.exists(extra_file_name):
+                    write_par_file(extra_params, outfile=extra_file_name)
                 if UNITS == "TCB":
-                    subprocess.run(["tcb2tdb", file_name, file_name.replace(".par", "_tdb.par")], env=CCG_ENV)
+                    if not os.path.exists(file_name.replace(".par", "_tdb.par")):
+                        subprocess.run(["tcb2tdb", file_name, file_name.replace(".par", "_tdb.par")], env=CCG_ENV)
         else:
             # TODO: simulate parameters.
             pass

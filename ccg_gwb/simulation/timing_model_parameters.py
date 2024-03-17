@@ -433,7 +433,9 @@ def validate_parameters(params, quiet=False):
     pint_params = (
         miscellaneous_params + astrometry_params + dispersion_params + spindown_params + binary_model + binary_params
     )
-    extra_params = [param for param in params if param not in pint_params]
+
+    PSR_param = [param for param in params if param.name == "PSR"]
+    extra_params = PSR_param + [param for param in params if param not in pint_params]
     return pint_params, extra_params
 
 
