@@ -8,6 +8,9 @@ import glob
 import os
 import pickle
 
+import numpy as np
+from enterprise.pulsar import Pulsar
+from pint.models import get_model
 from tqdm.auto import tqdm
 
 from ccg_gwb import CCG_CACHEDIR
@@ -39,11 +42,14 @@ class PTA_Simulator(object):
         self._signals = signals
         self.validate_signals()
         self._outdir = os.path.abspath(outdir)
+        self._psrdir = self._outdir + "/psr"
         self._status = "init"
         self._current_signal = self.signals[0]
         self._begin = "Not started yet."
         self._finish = "Not finished yet."
         self.quiet = quiet
+        self._psrs = None
+        self._exclude = []
 
         self.TimingModel_Simulator = TimingModel_Simulator(
             ATNF=ATNF, ATNF_Condition=ATNF_Condition, outdir=self.outdir + "/par", quiet=self.quiet
@@ -93,9 +99,18 @@ class PTA_Simulator(object):
     def outdir(self, value):
         full_path = os.path.abspath(value)
         self._outdir = full_path
+        self._psrdir = full_path + "/psr"
         self.TimingModel_Simulator.outdir = full_path + "/par"
         self.TOAs_Simulator.pardir = full_path + "/par"
         self.TOAs_Simulator.outdir = full_path + "/toas"
+
+    @property
+    def psrdir(self):
+        return self._psrdir
+
+    @psrdir.setter
+    def psrdir(self, value):
+        print(f"Warning:: psr directory are set automatically to: {self._psrdir}")
 
     @property
     def ATNF(self):
@@ -129,10 +144,33 @@ class PTA_Simulator(object):
     def current_signal(self, value):
         print("Warning:: Simulator current signal is read-only information.")
 
+    @property
+    def psrs(self):
+        return self._psrs
+
+    @psrs.setter
+    def psrs(self, value):
+        print("Warning:: PTA pulsars are loaded automatically.")
+
+    @psrs.deleter
+    def psrs(self):
+        del self._psrs
+        self._psrs = None
+
+    @property
+    def exclude(self):
+        return self._exclude
+
+    @exclude.setter
+    def exclude(self, value):
+        self._exclude = value
+
     def start(self, restart=False):
         # initialization
         if not os.path.exists(self.outdir):
             os.mkdir(self.outdir)
+        if not os.path.exists(self.psrdir):
+            os.mkdir(self.psrdir)
         if restart:
             self._begin = "Not started yet."
             self._finish = "Not finished yet."
@@ -157,9 +195,9 @@ class PTA_Simulator(object):
             self._status = "toas"
             self.save()
 
-        # TODO:
         if self.status == "toas":
-            # 3- create pulsar objects
+            print("Creating pulsar objects...")
+            self.create_pulsars()
             self._status = "psrs"
             self.save()
 
@@ -194,10 +232,53 @@ class PTA_Simulator(object):
             self._signals.remove("wn")
             self._signals = ["wn"] + self._signals
 
+    def create_pulsars(self):
+        toasfiles = glob.glob(self.TOAs_Simulator.outdir + "/*.toas")
+        for toasfile in tqdm(toasfiles):
+            PSR = os.path.basename(toasfile)[:-5]
+            psrfile = self.psrdir + "/" + PSR + ".psr"
+            if not os.path.exists(psrfile):
+                parfile = self.TimingModel_Simulator.outdir + "/" + PSR + ".par"
+                parfile_tdb = parfile.replace(".par", "_tdb.par")
+                if os.path.exists(parfile_tdb):
+                    parfile = parfile_tdb
+                model = get_model(parfile)
+                with open(toasfile, "rb") as file:
+                    toas = pickle.load(file)
+                psr = Pulsar(model, toas, planets=False)
+                with open(psrfile, "wb") as file:
+                    pickle.dump(psr, file)
+        self.load_pulsars(all_pulsars=True)
+        self._exclude = self._exclude + [
+            psr2.name
+            for psr_idx, psr1 in enumerate(self.psrs)
+            for psr2 in self.psrs[psr_idx + 1 :]
+            if np.all(psr1.pos == psr2.pos)
+        ]
+        self.load_pulsars()
+
+    def load_pulsars(self, all_pulsars=False):
+        psrfiles = glob.glob(self.psrdir + "/*.psr")
+        if len(psrfiles) > 0:
+            psrs = []
+            for psrfile in psrfiles:
+                PSR = os.path.basename(psrfile)[:-4]
+                if PSR in self.exclude:
+                    continue
+                with open(psrfile, "rb") as file:
+                    psrs.append(pickle.load(file))
+                if len(psrs) == self.npsrs and not all_pulsars:
+                    break
+            self._psrs = psrs
+        else:
+            self._psrs = None
+
     def save(self):
         file_name = CCG_CACHEDIR + "/" + self.name + ".sim"
+        del self.psrs
         with open(file_name, "wb") as file:
             pickle.dump(self, file)
+        self.load_pulsars()
 
     def summary(self):
         msg = f"""======================================
@@ -229,6 +310,7 @@ def load_Simulator(name):
     if os.path.exists(file_name):
         with open(file_name, "rb") as file:
             Simulator = pickle.load(file)
+            Simulator.load_pulsars()
         return Simulator
     else:
         print(f"Warning:: There is no simulator named {name}.")
