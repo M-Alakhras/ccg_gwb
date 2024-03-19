@@ -9,6 +9,7 @@ Tests for PTA simulation process.
 
 import glob
 import os
+import shutil
 
 from ccg_gwb.simulation.PTA_Simulator import PTA_Simulator, list_all_simulations, load_Simulator
 from tests.ccg_gwb_test_data import datadir
@@ -48,12 +49,4 @@ def test_PTA_Simulator():
     assert Sim_loaded.name == "test_simulation", msg
 
     # cleaning
-    parfiles = glob.glob(Sim.TimingModel_Simulator.outdir + "/*.par")
-    extrafiles = glob.glob(Sim.TimingModel_Simulator.outdir + "/*.extra")
-    toasfiles = glob.glob(Sim.TOAs_Simulator.outdir + "/*.toas")
-    errorfiles = glob.glob(Sim.TOAs_Simulator.outdir + "/*.error")
-    for file in parfiles + extrafiles + toasfiles + errorfiles:
-        os.remove(file)
-    os.rmdir(Sim.TimingModel_Simulator.outdir)
-    os.rmdir(Sim.TOAs_Simulator.outdir)
-    os.rmdir(Sim.outdir)
+    shutil.rmtree(Sim.outdir)
