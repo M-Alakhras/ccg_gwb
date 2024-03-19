@@ -14,7 +14,7 @@ requirements = [
     "pint-pulsar>=0.9.8",
     "psrqpy>=1.2.8",
     "tqdm>=4.66.2",
-    "enterprise-pulsar>=3.3.3",
+    "enterprise-pulsar @ git+https://github.com/M-Alakhras/enterprise",
 ]
 
 test_requirements = []
@@ -30,7 +30,7 @@ setup(
     url="https://github.com/M-Alakhras/ccg_gwb",
     packages=find_packages(include=["ccg_gwb", "ccg_gwb.*"]),
     package_dir={"ccg_gwb": "ccg_gwb"},
-    python_requires=">=3.9, <3.12",
+    python_requires=">=3.9, <3.11",
     install_requires=requirements,
     license="MIT license",
     zip_safe=False,
@@ -44,7 +44,6 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Astronomy",
         "Topic :: Scientific/Engineering :: Physics",
     ],

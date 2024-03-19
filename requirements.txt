@@ -3,4 +3,4 @@ astropy>=6.0.0
 pint-pulsar>=0.9.8
 psrqpy>=1.2.8
 tqdm>=4.66.2
-enterprise-pulsar>=3.3.3
+enterprise-pulsar @ git+https://github.com/M-Alakhras/enterprise
