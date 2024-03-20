@@ -5,11 +5,14 @@ Define PTA Simulator class.
 
 import datetime
 import glob
+import json
 import os
 import pickle
 
+import enterprise.signals.parameter as parameter
 import numpy as np
 from enterprise.pulsar import Pulsar
+from enterprise.signals import gp_signals, signal_base, utils, white_signals
 from pint.models import get_model
 from tqdm.auto import tqdm
 
@@ -30,10 +33,17 @@ class PTA_Simulator(object):
         ATNF=True,
         ATNF_Condition="P0 < 0.03",
         quiet=True,
+        log10_A=-14.6,
+        gamma=13 / 3,
     ):
 
         if outdir is None:
             outdir = os.getcwd()
+
+        if not isinstance(log10_A, list):
+            log10_A = [log10_A]
+        if not isinstance(gamma, list):
+            gamma = [gamma]
 
         # setting Simulator parameters
         self._name = name
@@ -50,6 +60,8 @@ class PTA_Simulator(object):
         self.quiet = quiet
         self._psrs = None
         self._exclude = []
+        self._log10_A = log10_A
+        self._gamma = gamma
 
         self.TimingModel_Simulator = TimingModel_Simulator(
             ATNF=ATNF, ATNF_Condition=ATNF_Condition, outdir=self.outdir + "/par", quiet=self.quiet
@@ -165,6 +177,22 @@ class PTA_Simulator(object):
     def exclude(self, value):
         self._exclude = value
 
+    @property
+    def log10_A(self):
+        return self._log10_A
+
+    @log10_A.setter
+    def log10_A(self, value):
+        self._log10_A = value
+
+    @property
+    def gamma(self):
+        return self._gamma
+
+    @gamma.setter
+    def gamma(self, value):
+        self._gamma = value
+
     def start(self, restart=False):
         # initialization
         if not os.path.exists(self.outdir):
@@ -202,17 +230,27 @@ class PTA_Simulator(object):
             self.save()
 
         if self.status == "psrs":
+            signalsdir = self.outdir + "/signals"
+            if not os.path.exists(signalsdir):
+                os.mkdir(signalsdir)
             # loop on signals
             current_index = self.signals.index(self.current_signal)
             for signal in self.signals[current_index:]:
-                print(f"Simulating PTA realizations with signals: {self.current_signal}")
-                for realization in tqdm(range(self.nrealizations)):
-                    pass
-                    # TODO:
-                    # 5- define signals
-                    # 4- create PTA
-                    # 6- make realizations
                 self._current_signal = signal
+                print(f"Simulating PTA realizations with signals: {self.current_signal}")
+                sig, sig_dir = self.create_signals()
+                for s, s_dir in zip(sig, sig_dir):
+                    if not os.path.exists(s_dir):
+                        os.mkdir(s_dir)
+                    PTA = signal_base.PTA([s(psr) for psr in self.psrs])
+                    for realization in tqdm(range(self.nrealizations)):
+                        wn_params_file = signalsdir + f"/wn/params_{realization+1}.json"
+                        resfile = s_dir + f"/realization_{realization+1}.res"
+                        params = self.params_sample(PTA, wn_params_file)
+                        if not os.path.exists(resfile):
+                            res = utils.simulate(PTA, params)
+                            with open(resfile, "wb") as file:
+                                pickle.dump(res, file)
                 self.save()
 
         # finalizing
@@ -272,6 +310,58 @@ class PTA_Simulator(object):
             self._psrs = psrs
         else:
             self._psrs = None
+
+    def create_signals(self):
+        signal_dir = f"{self.outdir}/signals/{self.current_signal}"
+        if "wn" in self.current_signal:
+            log10_efac = parameter.Normal(mu=0.029, sigma=0.093)
+            log10_equad = parameter.Uniform(-8.5, -5.5)
+            log10_ecorr = parameter.Uniform(-8.7, -5)
+            ef = white_signals.MeasurementNoise(efac=log10_efac, log10_t2equad=log10_equad)
+            ec = white_signals.EcorrKernelNoise(log10_ecorr=log10_ecorr)
+            s0 = ef + ec
+        else:
+            log10_efac = parameter.Constant(0)
+            ef = white_signals.MeasurementNoise(efac=log10_efac)
+            s0 = ef
+
+        # Signal collections
+        s = []
+        signal_dirs = []
+        if "gw" in self.current_signal:
+            for log10_A_value in self.log10_A:
+                for gamma_value in self.gamma:
+                    log10_A = parameter.Constant(log10_A_value)
+                    gamma = parameter.Constant(gamma_value)
+                    pl = utils.powerlaw(log10_A=log10_A, gamma=gamma)
+                    orf = utils.hd_orf()
+                    gw = gp_signals.FourierBasisCommonGP(pl, orf, components=50, combine=True, name="gw")
+                    s.append(s0 + gw)
+                    signal_dirs.append(
+                        signal_dir + "_log10A{:2.2f}_gamma{:2.2f}".format(np.abs(log10_A_value), np.abs(gamma_value))
+                    )
+        else:
+            s = [s0]
+            signal_dirs = [signal_dir]
+        return s, signal_dirs
+
+    def params_sample(self, PTA, wn_params_file):
+        params = {}
+        if self.current_signal == "wn":
+            if os.path.exists(wn_params_file):
+                with open(wn_params_file, "r") as file:
+                    params = json.load(file)
+            else:
+                params = {p.name: p.sample() for p in PTA.params}
+                for p in PTA.params:
+                    if p.name[-4:] == "efac":
+                        params[p.name] = 10 ** params[p.name]
+                with open(wn_params_file, "w") as file:
+                    json.dump(params, file)
+        elif "wn" in self.current_signal:
+            with open(wn_params_file, "r") as file:
+                params = json.load(file)
+        return params
 
     def save(self):
         file_name = CCG_CACHEDIR + "/" + self.name + ".sim"
