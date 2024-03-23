@@ -345,6 +345,10 @@ def validate_parameters(params, quiet=False):
         if param_name not in miscellaneous_params_names:
             param = Parameter(param_name, value=default_values[param_name])
             miscellaneous_params += [param.auto_detect()]
+    CLK_param = [param for param in miscellaneous_params if param.name == "CLK"][0]
+    CLK_version = CLK_param.value.split("(")[-1][:-1]
+    if "BIPM" in CLK_version and CLK_version == "BIPM":
+        CLK_param.value = default_values["CLK"]
 
     # Check spindown
     if not quiet:

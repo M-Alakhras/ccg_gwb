@@ -5,10 +5,12 @@ ignore =
   E203
   # line break before binary operator; conflicts with black
   W503
-  # bare except ok      
+  # bare except ok
   E722
   # lambda expressions ok      
   E731      
+  # escape sequence for matplotlib latex expressions
+  W605
 exclude =
     .git
     .tox

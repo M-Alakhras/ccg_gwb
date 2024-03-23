@@ -183,7 +183,10 @@ class PTA_Simulator(object):
 
     @log10_A.setter
     def log10_A(self, value):
-        self._log10_A = value
+        if isinstance(value, list):
+            self._log10_A = value
+        else:
+            self._log10_A = list(value)
 
     @property
     def gamma(self):
@@ -306,6 +309,8 @@ class PTA_Simulator(object):
                 with open(psrfile, "rb") as file:
                     psrs.append(pickle.load(file))
                 if len(psrs) == self.npsrs and not all_pulsars:
+                    with open(self.psrdir + "/" + self.name + ".psrs", "wb") as file:
+                        pickle.dump(psrs, file)
                     break
             self._psrs = psrs
         else:
