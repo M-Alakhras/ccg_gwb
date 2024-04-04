@@ -17,7 +17,7 @@ requirements = [
     "ptmcmcsampler>=2.1.1",
     "enterprise_extensions>=2.4.2",
     "enterprise-pulsar @ git+https://github.com/M-Alakhras/enterprise",
-    "networkx>=3.21",
+    "networkx>=3.2.1",
 ]
 
 test_requirements = []
