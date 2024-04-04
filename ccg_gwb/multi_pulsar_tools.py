@@ -4,18 +4,65 @@ functions to analyze multi pulsar signals.
 """
 
 import numpy as np
+import pandas as pd
+import pingouin as pg
 import scipy.linalg as sl
 from enterprise.signals import parameter, selections, signal_base, utils, white_signals
 from enterprise_extensions import model_utils
 from enterprise_extensions.blocks import common_red_noise_block
 
+from ccg_gwb.one_pulsar_tools import _lowpass_filter
 
-def _calculate_cross_correlation(psrs):
+
+def sss(res):
+    ii = np.arange(0, len(res), dtype=int)
+    g = np.random.randn(len(res))
+    ip = ii + 1.0 * g
+    ihat = np.argsort(ip)
+    return res[ihat]
+
+
+def _calculate_cross_correlation(psrs, mode="valid", filter_residuals="None", cutoff=5e-9, order=6, nlags=301):
     npsrs = len(psrs)
     correlation_matrix = np.zeros((npsrs, npsrs))
-    for ii, psr1 in enumerate(psrs):
-        for jj, psr2 in enumerate(psrs):
-            correlation_matrix[ii, jj] = np.correlate(psr1.residuals, psr2.residuals)[0]
+    psr_names = [psr.name for psr in psrs]
+    if filter_residuals == "None":
+        psr_res = {psr.name: psr.residuals for psr in psrs}
+    elif filter_residuals == "lowpass":
+        psr_res = {psr.name: _lowpass_filter(psr, cutoff=cutoff, order=order) for psr in psrs}
+    df = pd.DataFrame(psr_res)
+    for ii, psr1 in enumerate(psr_names):
+        for jj, psr2 in enumerate(psr_names):
+            if ii == jj:
+                continue
+            res1 = psr_res[psr1]
+            res2 = psr_res[psr2]
+            sig1 = np.correlate(res1, res1, mode="valid")[0]
+            sig2 = np.correlate(res2, res2, mode="valid")[0]
+            if mode == "valid":
+                cor = np.correlate(res1, res2, mode="valid") / np.sqrt(sig1 * sig2)
+                correlation_matrix[ii, jj] = cor[0]
+            elif mode == "full":
+                cor = np.correlate(res1, res2, mode="full") / np.sqrt(sig1 * sig2)
+                cor_idx = np.arange((len(cor) - nlags) // 2, (len(cor) + nlags) // 2, dtype=int)
+                correlation_matrix[ii, jj] = np.max(cor[cor_idx])
+            elif mode == "SSS":
+                cor = np.correlate(res1, res2, mode="full") / np.sqrt(sig1 * sig2)
+                cor_idx = np.arange((len(cor) - nlags) // 2, (len(cor) + nlags) // 2, dtype=int)
+                cor_sss = []
+                for nsss in range(99):
+                    res1_sss = sss(res1)
+                    res2_sss = sss(res2)
+                    sig1_sss = np.correlate(res1_sss, res1_sss, mode="valid")[0]
+                    sig2_sss = np.correlate(res2_sss, res2_sss, mode="valid")[0]
+                    cor_sss.append(np.correlate(res1_sss, res2_sss, mode="full") / np.sqrt(sig1_sss * sig2_sss))
+                cor_sss = np.array(cor_sss)
+                correlation_matrix[ii, jj] = np.any(np.all(cor[cor_idx] > cor_sss[:, cor_idx], axis=0))
+            elif mode == "partial":
+                r = pg.partial_corr(data=df, x=psr1, y=psr2)
+                correlation_matrix[ii, jj] = r.r["pearson"]
+            else:
+                print(f"Warning:: Uknown correlation mode '{mode}'")
     return correlation_matrix
 
 
@@ -88,10 +135,21 @@ def get_phiinvs_diag(array, nrows, ncols):
     return a[b]
 
 
-def _compute_os(OS):
+def _compute_os(OS, params=None, loud=False):
     npsrs = len(OS.pta._signalcollections)
 
-    params = {name: par.sample() for name, par in zip(OS.pta.param_names, OS.pta.params)}
+    if params is None:
+        params = {name: par.sample() for name, par in zip(OS.pta.param_names, OS.pta.params)}
+    else:
+        # check to see that the params dictionary includes values
+        # for all of the parameters in the model
+        for p in OS.pta.param_names:
+            if p not in params.keys():
+                msg = "{0} is not included ".format(p)
+                msg += "in the parameter dictionary. "
+                msg += "Drawing a random value."
+                if loud:
+                    print(msg)
 
     TNrs = OS.get_TNr(params=params)
     TNTs = OS.get_TNT(params=params)
@@ -154,3 +212,25 @@ def _calculate_noise_weighted_cross_correlation(psrs, rho):
             rho_matrix[ii, jj] = rho_matrix[jj, ii] = rho[idx]
             idx += 1
     return rho_matrix
+
+
+def _binning_pulsars_cross_correlation(xi, rho, sig, bins=9):
+    bins_edge = np.linspace(0, np.pi, bins + 1)
+    bins_center = bins_edge[:-1] + (bins_edge[1] - bins_edge[0]) / 2
+    bins_num = np.zeros(bins)
+    rho_bins = np.zeros(bins)
+    sig_bins = np.zeros(bins)
+    for bb in range(bins):
+        for ii, x in enumerate(xi):
+            if x >= bins_edge[bb] and x < bins_edge[bb + 1]:
+                bins_num[bb] += 1
+                rho_bins[bb] += rho[ii] / sig[ii] ** 2
+                sig_bins[bb] += 1 / sig[ii] ** 2
+    mask = np.where(bins_num != 0)
+    bins_center = bins_center[mask]
+    bins = len(bins_center)
+    rho_bins = rho_bins[mask].reshape(bins)
+    sig_bins = sig_bins[mask].reshape(bins)
+    rho_bins = rho_bins / sig_bins
+    sig_bins = 1 / np.sqrt(sig_bins)
+    return bins_center, rho_bins, sig_bins

@@ -10,7 +10,7 @@ import numpy as np
 from astropy import units as u
 from enterprise.signals import gp_signals, signal_base, utils, white_signals
 from PTMCMCSampler.PTMCMCSampler import PTSampler as ptmcmc
-from scipy.signal import periodogram
+from scipy.signal import butter, lfilter, periodogram
 
 
 def _calculate_sampling_frequency(toas):
@@ -83,3 +83,10 @@ def _estimate_white_noise(psr):
     shutil.rmtree(os.getcwd() + "/chains")
 
     return efac, log10_t2equad, log10_ecorr
+
+
+def _lowpass_filter(psr, cutoff=2e-9, order=6):
+    fs = _calculate_sampling_frequency(psr.toas)
+    b, a = butter(order, cutoff, fs=fs.value, btype="low", analog=False)
+    filtered_res = lfilter(b, a, psr.residuals)
+    return filtered_res

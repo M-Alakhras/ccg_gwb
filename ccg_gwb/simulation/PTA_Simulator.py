@@ -22,7 +22,6 @@ from ccg_gwb.simulation.toas_simulation import TOAs_Simulator
 
 
 class PTA_Simulator(object):
-
     def __init__(
         self,
         name,

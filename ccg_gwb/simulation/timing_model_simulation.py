@@ -14,7 +14,6 @@ from ccg_gwb.simulation.timing_model_parameters import write_par_file
 
 
 class TimingModel_Simulator(object):
-
     def __init__(self, ATNF=False, ATNF_Condition="", outdir=None, quiet=False):
 
         if outdir is None:

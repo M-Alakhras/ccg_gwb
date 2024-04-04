@@ -16,7 +16,6 @@ from tqdm.auto import tqdm
 
 
 class TOAs_Simulator(object):
-
     def __init__(
         self,
         start_time="2000-01-01 00:00:00",

@@ -6,7 +6,6 @@ import os
 
 
 class Parameter(object):
-
     def __init__(self, name, value=None, error=None, freeze=True):
         self._name = name
         self._value = value
@@ -125,7 +124,6 @@ class Parameter(object):
 
 
 class MiscellaneousParameter(Parameter):
-
     def __init__(self, name, value=None):
         super().__init__(name, value=value)
         self.check_validity()
@@ -136,7 +134,6 @@ class MiscellaneousParameter(Parameter):
 
 
 class AstrometryParameter(Parameter):
-
     def __init__(self, name, value=None, error=None, freeze=True):
         super().__init__(name, value=value, error=error, freeze=freeze)
         self.check_validity()
@@ -164,7 +161,6 @@ class AstrometryParameter(Parameter):
 
 
 class DispersionParameter(Parameter):
-
     def __init__(self, name, value=None, error=None, freeze=True):
         super().__init__(name, value=value, error=error, freeze=freeze)
         self.check_validity()
@@ -176,7 +172,6 @@ class DispersionParameter(Parameter):
 
 
 class SpindownParameter(Parameter):
-
     def __init__(self, name, value=None, error=None, freeze=True):
         super().__init__(name, value=value, error=error, freeze=freeze)
         self.check_validity()
@@ -188,7 +183,6 @@ class SpindownParameter(Parameter):
 
 
 class BinaryModel(Parameter):
-
     def __init__(self, name):
         super().__init__("BINARY", value=name, error=None, freeze=True)
         self.check_validity()
@@ -199,7 +193,6 @@ class BinaryModel(Parameter):
 
 
 class BinaryParameter(Parameter):
-
     def __init__(self, name, binary_model=None, value=None, error=None, freeze=True):
         super().__init__(name, value=value, error=error, freeze=freeze)
         self._binary_model = BinaryModel(binary_model)
