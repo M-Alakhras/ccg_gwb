@@ -10,6 +10,7 @@ with open("README.rst") as readme_file:
 
 requirements = [
     "appdirs>=1.4.4",
+    "loguru>=0.7.2",
     "astropy>=6.0.0",
     "pint-pulsar>=0.9.8",
     "psrqpy>=1.2.8",
